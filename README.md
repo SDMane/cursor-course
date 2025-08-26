@@ -1,5 +1,5 @@
 # Vibe Coding with Cursor Course
-There should be light
+So you think darkness is your ally
 
 
 # Course Assets / Contact Me
