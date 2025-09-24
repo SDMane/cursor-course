@@ -12,5 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "task-master-ai": "^0.12.1"
+  },
+  "devDependencies": {
+    "supabase": "^2.39.2"
   }
 }

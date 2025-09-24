@@ -1,12 +1,28 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 
+// Simple image component without complex state management
+function ImageWithFallback({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  return (
+    <img 
+      src={src} 
+      alt={alt}
+      className={className}
+      onError={(e) => {
+        // Simple fallback - replace with a placeholder
+        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEyOCIgeT0iMTI4IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2QjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5GYWlsZWQgdG8gbG9hZCBpbWFnZTwvdGV4dD4KPC9zdmc+';
+      }}
+    />
+  );
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   type: 'text' | 'image';
   imageUrl?: string;
+  prompt?: string;
 }
 
 type ChatMode = 'text' | 'image';
@@ -43,19 +59,140 @@ export default function ChatPage() {
     setInput('');
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: mode === 'text' 
-          ? `I received your message: "${userMessage.content}". This is a mock response for ${mode} mode.`
-          : `I'll generate an image based on: "${userMessage.content}". This is a mock response for ${mode} mode.`,
-        type: mode
-      };
-      setMessages(prev => [...prev, assistantMessage]);
+    if (mode === 'text') {
+      // Real streaming API call for text mode
+      try {
+        const response = await fetch('http://127.0.0.1:54321/functions/v1/chat-text', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+          },
+          body: JSON.stringify({ 
+            message: userMessage.content,
+            chatId: crypto.randomUUID()
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Create assistant message that will be updated with streaming content
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: '',
+          type: 'text'
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+
+        // Read the streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (reader) {
+          let accumulatedContent = '';
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            console.log('Received chunk:', chunk);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6).trim();
+                console.log('Processing data:', data);
+                
+                if (data === '[DONE]') {
+                  console.log('Stream completed');
+                  setIsLoading(false);
+                  break;
+                }
+                
+                if (data) {
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.content) {
+                      console.log('Adding token:', parsed.content);
+                      accumulatedContent += parsed.content;
+                      
+                      // Update the assistant message with accumulated content
+                      setMessages(prev => prev.map(msg => 
+                        msg.id === assistantMessage.id 
+                          ? { ...msg, content: accumulatedContent }
+                          : msg
+                      ));
+                    }
+                  } catch (e) {
+                    console.log('Invalid JSON:', data);
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error calling chat API:', error);
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          type: 'text'
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        setIsLoading(false);
+      }
+    } else {
+      // Real image generation API call
+      try {
+        const response = await fetch('http://127.0.0.1:54321/functions/v1/chat-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+          },
+          body: JSON.stringify({ 
+            message: userMessage.content,
+            chatId: crypto.randomUUID()
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Image generation response:', data);
+
+        if (data.success && data.imageUrl) {
+          const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: data.imageUrl, // Store the image URL in content
+            type: 'image',
+            prompt: data.revisedPrompt || userMessage.content // Store the prompt for display
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+        } else {
+          throw new Error(data.error || 'Failed to generate image');
+        }
+      } catch (error) {
+        console.error('Error calling image generation API:', error);
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'Sorry, I encountered an error generating the image. Please try again.',
+          type: 'text'
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   if (messages.length === 1) {
@@ -153,10 +290,18 @@ export default function ChatPage() {
             >
               {message.type === 'image' && message.role === 'assistant' ? (
                 <div className="text-center">
-                  <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center mb-2">
-                    <span className="text-muted-foreground">Generated Image Placeholder</span>
+                  <div className="mb-2">
+                    <ImageWithFallback 
+                      src={message.content} 
+                      alt={message.prompt || "Generated image"}
+                      className="max-w-full max-h-96 rounded-lg shadow-sm"
+                    />
                   </div>
-                  <p className="text-sm">{message.content}</p>
+                  {message.prompt && (
+                    <p className="text-sm text-muted-foreground italic">
+                      "{message.prompt}"
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p>{message.content}</p>
