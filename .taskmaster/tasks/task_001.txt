@@ -1,0 +1,66 @@
+# Task ID: 1
+# Title: Setup NextJS Project with Supabase Integration
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Initialize the NextJS project with App Directory structure and configure Supabase for local development
+# Details:
+1. Create a new NextJS project using `npx create-next-app@latest` with TypeScript
+2. Configure the App Directory structure following NextJS_AppDirectory.md guidelines
+3. Install and configure TailwindCSS and ShadUI for styling
+4. Set up Supabase CLI for local development (refer to Supabase_CLI_GettingStarted.md)
+5. Initialize Docker for running Supabase locally
+6. Configure environment variables for Supabase and OpenAI API keys
+7. Create basic project structure with pages, components, and API routes
+
+# Test Strategy:
+Verify that the NextJS application runs without errors, Supabase local instance is accessible, and the basic project structure is in place. Test the connection to Supabase by performing a simple query.
+
+# Subtasks:
+## 1. Initialize NextJS Project with TypeScript and Styling Libraries [pending]
+### Dependencies: None
+### Description: Set up the NextJS project with TypeScript support and configure TailwindCSS and ShadUI for styling
+### Details:
+1. Create a new NextJS project using `npx create-next-app@latest` with TypeScript enabled
+2. Configure the App Directory structure following NextJS_AppDirectory.md guidelines
+3. Install TailwindCSS following the official documentation
+4. Configure TailwindCSS by creating the necessary configuration files
+5. Install and set up ShadUI components library
+6. Test the setup by creating a simple styled component
+
+## 2. Set Up Supabase Local Development Environment [pending]
+### Dependencies: None
+### Description: Configure Supabase CLI and Docker for local development environment
+### Details:
+1. Install Supabase CLI following instructions in Supabase_CLI_GettingStarted.md
+2. Ensure Docker is installed and properly configured on the development machine
+3. Initialize Supabase project locally using the CLI
+4. Start the local Supabase instance with Docker
+5. Verify the Supabase dashboard is accessible locally
+6. Test the connection to ensure the local Supabase instance is working correctly
+
+## 3. Configure Environment Variables and Security [pending]
+### Dependencies: None
+### Description: Set up environment variables for Supabase and OpenAI API keys with proper security practices
+### Details:
+1. Create a .env.local file for local development
+2. Add Supabase URL and anon key to environment variables
+3. Add OpenAI API key to environment variables
+4. Configure NextJS to use the environment variables
+5. Set up .gitignore to ensure sensitive information isn't committed
+6. Create a sample .env.example file with placeholder values for documentation
+7. Implement environment variable validation to ensure all required variables are present
+
+## 4. Establish Project Structure and Basic Components [pending]
+### Dependencies: None
+### Description: Create the foundational project structure with pages, components, and API routes
+### Details:
+1. Set up the app directory with appropriate route segments
+2. Create a components directory with subdirectories for UI, layout, and feature components
+3. Establish API route handlers in the app/api directory
+4. Create utility functions directory for shared logic
+5. Set up service layer for external API interactions
+6. Create basic layout components (header, footer, main container)
+7. Implement a simple home page to test the setup
+8. Ensure proper TypeScript typing throughout the project structure
+

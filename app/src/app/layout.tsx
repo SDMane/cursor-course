@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Chat App",
   description: "A modern chat application built with Next.js, Supabase, and AI",
+  other: {
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://127.0.0.1:54321;"
+  }
 };
 
 export default function RootLayout({

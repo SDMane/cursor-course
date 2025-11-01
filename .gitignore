@@ -48,9 +48,8 @@ dev-debug.log
 *.sln
 *.sw?
 
-# Task files
-tasks.json
-tasks/
+# Cursor specific (contains API keys)
+.cursor/mcp.json
 
 # Temporary and branch folders
 .branches/
@@ -58,3 +57,12 @@ tasks/
 # Supabase specific
 supabase/.branches/
 supabase/.temp/
+
+# Dependency directories
+node_modules/
+# Environment variables
+# OS specific
+
+# Task files
+# tasks.json
+# tasks/ 

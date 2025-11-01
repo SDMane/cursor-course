@@ -1,0 +1,18 @@
+# Task ID: 9
+# Title: Implement Image Generation Mode Toggle
+# Status: pending
+# Dependencies: 3, 8
+# Priority: medium
+# Description: Add functionality to toggle between text chat mode and image generation mode
+# Details:
+1. Create a toggle component in the UI to switch between text and image modes
+2. Update the message input component to handle different input modes
+3. Modify the message display component to properly render image messages
+4. Implement state management for the current mode
+5. Add appropriate visual indicators for the current mode
+6. Create an image preview component for generated images
+7. Add functionality to save or download generated images
+8. Ensure smooth transitions between modes
+
+# Test Strategy:
+Test the toggle functionality to ensure it correctly switches between text and image modes. Verify that the UI updates appropriately for each mode. Test image generation and display with various prompts. Ensure the image preview and download functionality works correctly.

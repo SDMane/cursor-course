@@ -1,13 +1,13 @@
----
-description: 
-globs: 
-alwaysApply: false
----
 
 REPORT-FULL
 1. Create a 1 line commit message in standard formatting.
 2. 1. Say #[REPORT-FULL]: commit msg from above
 3. Summarize the tradeoffs-full that we did, leading to the recommendation chosen.
+4. Explain why chose the path we did, and the file changes we made.
+5. Explain any bugs we encountered and quote the errors. What we did instead.
+6. Future Proofing: Anything we could improve in the future.
+7. Tests we ran to ensure it worked.
+8. Mention any new SQL migrations we worked on to apply, Edge functions to re-deploy.
 4. Explain why chose the path we did, and the file changes we made.
 5. Explain any bugs we encountered and quote the errors. What we did instead.
 6. Future Proofing: Anything we could improve in the future.

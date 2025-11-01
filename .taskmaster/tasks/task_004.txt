@@ -1,0 +1,63 @@
+# Task ID: 4
+# Title: Create Supabase Edge Function for Text Generation
+# Status: pending
+# Dependencies: 1, 2
+# Priority: high
+# Description: Implement a serverless function to handle communication with OpenAI's text generation API
+# Details:
+1. Create a new Supabase Edge Function for text generation (refer to Supabase_EdgeFunctions.md)
+2. Implement the function to accept user messages and chat context
+3. Set up the OpenAI API client with the gpt-4.1-nano-2025-04-14 model
+4. Configure the API request with appropriate parameters for streaming responses
+5. Implement error handling for API failures
+6. Add rate limiting to prevent excessive API usage
+7. Return the response in a format that can be consumed by the frontend
+8. Deploy the function to Supabase
+
+# Test Strategy:
+Test the Edge Function locally using the Supabase CLI. Verify it correctly communicates with OpenAI's API and returns appropriate responses. Test error scenarios and rate limiting behavior.
+
+# Subtasks:
+## 1. Set up Supabase Edge Function and configuration [pending]
+### Dependencies: None
+### Description: Create and configure the basic structure for the Supabase Edge Function that will handle text generation
+### Details:
+1. Create a new Supabase Edge Function using the Supabase CLI
+2. Set up the project structure following best practices from Supabase_EdgeFunctions.md
+3. Configure environment variables for API keys and other sensitive information
+4. Implement the function handler to accept and validate incoming requests
+5. Create the basic request/response structure for the function
+
+## 2. Implement OpenAI API integration [pending]
+### Dependencies: 4.1
+### Description: Set up the OpenAI client and implement the core text generation functionality
+### Details:
+1. Install and configure the OpenAI SDK or implement fetch-based API calls
+2. Set up the OpenAI API client with the gpt-4.1-nano-2025-04-14 model
+3. Implement the function to process user messages and chat context
+4. Configure the API request with appropriate parameters (temperature, max_tokens, etc.)
+5. Implement the initial API call logic to OpenAI
+
+## 3. Implement streaming response handling [pending]
+### Dependencies: 4.2
+### Description: Add support for streaming responses from OpenAI and format them for frontend consumption
+### Details:
+1. Configure the OpenAI request to use streaming mode
+2. Implement the streaming response handler
+3. Set up proper event handling for the streaming data
+4. Format the streamed chunks into a consumable format for the frontend
+5. Ensure proper closing of streams and connections
+6. Test the streaming functionality with various message lengths
+
+## 4. Implement error handling, rate limiting, and deployment [pending]
+### Dependencies: 4.3
+### Description: Add robust error handling, implement rate limiting, and deploy the function
+### Details:
+1. Implement comprehensive error handling for API failures
+2. Add appropriate error responses with status codes and messages
+3. Implement rate limiting logic to prevent excessive API usage
+4. Add request validation and sanitization
+5. Test the function thoroughly with various inputs and error conditions
+6. Deploy the function to Supabase
+7. Document the API endpoints and usage instructions
+

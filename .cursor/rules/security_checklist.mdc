@@ -1,0 +1,175 @@
+---
+description: Security checklist maintenance and review process for frontend applications
+globs: app/src/**/*.tsx, app/src/**/*.ts, supabase/functions/**/*.ts, docs/logs/frontend_security_checklist.txt
+alwaysApply: true
+---
+
+# Security Checklist Maintenance Rule
+
+## **Purpose**
+Maintain and update the frontend security checklist based on Security Best Practices documentation. This rule ensures continuous security monitoring and compliance.
+
+## **Security Checklist Location**
+- **File**: `docs/logs/frontend_security_checklist.txt`
+- **Update Frequency**: After any security-related changes
+- **Review Schedule**: Monthly or after major feature additions
+
+## **When to Update the Checklist**
+
+### **Trigger Events:**
+- ✅ **New API endpoints added** - Review CORS and authentication
+- ✅ **Input handling changes** - Validate sanitization and XSS prevention
+- ✅ **Authentication modifications** - Check authorization and session management
+- ✅ **Error handling updates** - Ensure no sensitive information exposure
+- ✅ **Dependency updates** - Review for security vulnerabilities
+- ✅ **Production deployment** - Verify HTTPS and security headers
+
+### **Code Changes Requiring Checklist Updates:**
+- Frontend form handling (`app/src/app/page.tsx`)
+- Edge Function modifications (`supabase/functions/*/index.ts`)
+- API endpoint additions or modifications
+- Authentication or authorization changes
+- Error handling implementations
+
+## **Checklist Update Process**
+
+### **1. Identify Security Impact**
+```typescript
+// Example: New chat input field
+const [newInput, setNewInput] = useState('');
+// → Update checklist: Input Validation section
+```
+
+### **2. Update Relevant Sections**
+- Mark completed items with ✅
+- Mark items needing review with ⚠️
+- Add new security considerations
+- Update status and action items
+
+### **3. Update Analysis Section**
+- Review current implementation
+- Identify new security concerns
+- Update recommendations
+- Adjust overall security score
+
+## **Security Categories to Monitor**
+
+### **Frontend Security (Primary Focus)**
+- **HTTPS Implementation**: All endpoints secure
+- **Input Validation**: XSS prevention and sanitization
+- **Data Storage**: No sensitive data in browser
+- **CSRF Protection**: Anti-forgery tokens
+- **API Key Management**: No exposed credentials
+
+### **Backend Security (Edge Functions)**
+- **Authentication**: Proper user verification
+- **Authorization**: Permission checks
+- **API Protection**: Endpoint security
+- **SQL Injection**: Parameterized queries
+- **Security Headers**: Proper HTTP headers
+
+### **Practical Security**
+- **Dependencies**: Updated and secure
+- **Error Handling**: No information disclosure
+- **Cookies**: Secure configuration
+- **File Uploads**: Validation and scanning
+- **Rate Limiting**: DoS protection
+
+## **Checklist Maintenance Commands**
+
+### **Update Checklist After Changes:**
+```bash
+# 1. Review changed files
+git diff HEAD~1 --name-only | grep -E "(\.tsx?$|\.ts$|checklist\.txt)"
+
+# 2. Update checklist
+# Edit docs/logs/frontend_security_checklist.txt
+# Update relevant sections based on changes
+
+# 3. Commit security updates
+git add docs/logs/frontend_security_checklist.txt
+git commit -m "security: Update frontend security checklist after [change description]"
+```
+
+### **Monthly Security Review:**
+```bash
+# 1. Review all security items
+# 2. Update compliance status
+# 3. Check for new vulnerabilities
+# 4. Update recommendations
+# 5. Set next review date
+```
+
+## **Security Score Calculation**
+
+### **Scoring System:**
+- **✅ Excellent (10/10)**: Fully implemented and tested
+- **✅ Good (8/10)**: Implemented with minor gaps
+- **⚠️ Needs Review (6/10)**: Partially implemented
+- **❌ Poor (4/10)**: Significant gaps or issues
+- **❌ Critical (2/10)**: Major security vulnerabilities
+
+### **Overall Score Calculation:**
+```
+Overall Score = (Sum of Category Scores) / Number of Categories
+Target: 8/10 or higher
+```
+
+## **Integration with Development Workflow**
+
+### **Pre-Commit Security Check:**
+1. Review changed files for security implications
+2. Update checklist if needed
+3. Verify no new vulnerabilities introduced
+4. Ensure security score maintained or improved
+
+### **Post-Deployment Security Review:**
+1. Verify production security configuration
+2. Test security measures in production
+3. Update checklist with production findings
+4. Document any production-specific security notes
+
+## **Security Checklist Template Updates**
+
+### **When Adding New Features:**
+```markdown
+### ✅ [New Security Category]
+- [ ] [Specific security requirement]
+- [ ] [Another requirement]
+
+**Status**: ⚠️ NEW FEATURE - Needs security review
+**Action Required**: [Specific actions needed]
+```
+
+### **When Updating Existing Features:**
+```markdown
+**Status**: [Updated status based on changes]
+**Action Required**: [Updated actions based on modifications]
+```
+
+## **Emergency Security Response**
+
+### **If Security Vulnerability Found:**
+1. **Immediate**: Update checklist with vulnerability details
+2. **Priority**: Mark as critical issue
+3. **Action**: Create immediate fix plan
+4. **Documentation**: Update checklist with resolution steps
+5. **Review**: Conduct full security audit after fix
+
+## **Compliance and Auditing**
+
+### **Regular Audits:**
+- **Weekly**: Review recent changes against checklist
+- **Monthly**: Full security assessment
+- **Quarterly**: Comprehensive security review
+- **Annually**: Complete security audit and checklist overhaul
+
+### **Documentation Requirements:**
+- All security decisions must be documented in checklist
+- Security score changes must be justified
+- Action items must have clear timelines
+- Compliance status must be regularly updated
+
+---
+
+**Remember**: Security is an ongoing process, not a one-time implementation. Regular checklist maintenance ensures continuous security improvement and compliance with best practices.

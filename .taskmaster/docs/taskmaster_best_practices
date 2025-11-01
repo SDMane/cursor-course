@@ -1,0 +1,79 @@
+Great question! Now that you have your tasks organized, here's how to use Task Master to know when to begin tasks and manage your workflow effectively:
+
+## 1. Check What's Ready to Work On
+
+Start by seeing what tasks are available to work on:
+
+```bash
+npx task-master next
+```
+
+This command will show you the **next available task** based on:
+- Dependencies (tasks that must be completed first)
+- Priority levels
+- Current status
+
+## 2. View Your Current Task List
+
+To see all your tasks and their status:
+
+```bash
+npx task-master list
+```
+
+This gives you an overview of:
+- Which tasks are pending
+- Which are in progress
+- Which are completed
+- Dependencies between tasks
+
+## 3. Get Detailed Information About a Specific Task
+
+When you want to understand what a task involves before starting:
+
+```bash
+npx task-master show <task-id>
+```
+
+For example: `npx task-master show 1` or `npx task-master show 2.1` for subtasks.
+
+## 4. Break Down Complex Tasks
+
+If a task seems too big, break it down into smaller subtasks:
+
+```bash
+npx task-master expand --id=<task-id> --research
+```
+
+This will create detailed subtasks that are easier to implement.
+
+## 5. Mark Progress as You Go
+
+As you complete work:
+
+```bash
+# Mark a task as in progress
+npx task-master set-status --id=<task-id> --status=in-progress
+
+# Mark a task as done
+npx task-master set-status --id=<task-id> --status=done
+```
+
+## Typical Daily Workflow
+
+1. **Start your day**: `npx task-master next` to see what to work on
+2. **Get details**: `npx task-master show <id>` to understand the task
+3. **Start working**: Set status to "in-progress"  
+4. **Log progress**: Use `npx task-master update-subtask` to record findings
+5. **Complete**: Mark as "done" when finished
+6. **Repeat**: Run `npx task-master next` again
+
+## Pro Tips
+
+- **Dependencies matter**: Tasks with dependencies won't show as "next" until prerequisites are done
+- **Use research flag**: Add `--research` to commands for AI-powered insights
+- **Log everything**: Use `update-subtask` to record what you learn during implementation
+- **Check complexity**: Run `npx task-master analyze-complexity` if tasks seem too big
+
+Would you like me to help you get started by running `npx task-master next` to see what your first task should be?
+

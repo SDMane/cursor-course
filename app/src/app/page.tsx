@@ -1,6 +1,29 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 
+// Security constants
+const MAX_MESSAGE_LENGTH = 1000;
+const MAX_IMAGE_PROMPT_LENGTH = 4000; // DALL-E 3 limit
+
+// Content sanitization function
+const sanitizeImagePrompt = (prompt: string): string => {
+  return prompt
+    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .substring(0, MAX_IMAGE_PROMPT_LENGTH)
+    .trim();
+};
+
+// Error message sanitization
+const sanitizeErrorMessage = (error: any): string => {
+  const message = error?.message || 'An unknown error occurred';
+  // Remove potentially sensitive information
+  return message
+    .replace(/Bearer [^\s]+/g, 'Bearer [REDACTED]')
+    .replace(/api[_-]?key[=:][^\s&]+/gi, 'api_key=[REDACTED]')
+    .substring(0, 200); // Limit error message length
+};
+
 // Simple image component without complex state management
 function ImageWithFallback({ src, alt, className }: { src: string; alt: string; className?: string }) {
   return (
@@ -34,6 +57,9 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<ChatMode>('text');
   const [isLoading, setIsLoading] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const [rateLimited, setRateLimited] = useState(false);
+  const [chatId, setChatId] = useState<string | null>(null); // Add chat session ID
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -44,20 +70,61 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Add new chat functionality
+  const startNewChat = () => {
+    setMessages([
+      { id: '1', role: 'assistant', content: 'Hello! I can help you with text chat or generate images. Use the toggle below to switch between modes.', type: 'text' }
+    ]);
+    setChatId(null); // Reset chat ID to trigger new session creation
+    setInput('');
+    setValidationError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    
+    // Clear previous errors
+    setValidationError('');
+    
+    // Enhanced validation
+    if (!input.trim()) {
+      setValidationError('Please enter a message');
+      return;
+    }
+    
+    if (isLoading || rateLimited) {
+      return;
+    }
+    
+    if (input.length > MAX_MESSAGE_LENGTH) {
+      setValidationError(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      return;
+    }
+    
+    if (mode === 'image' && input.length > MAX_IMAGE_PROMPT_LENGTH) {
+      setValidationError(`Image prompt too long (max ${MAX_IMAGE_PROMPT_LENGTH} characters)`);
+      return;
+    }
+
+    // Sanitize input based on mode
+    const sanitizedContent = mode === 'image' ? sanitizeImagePrompt(input) : input.trim();
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: sanitizedContent,
       type: mode
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+
+    // Generate chatId if it doesn't exist (will be used by API)
+    const currentChatId = chatId || crypto.randomUUID();
+    if (!chatId) {
+      setChatId(currentChatId);
+    }
 
     if (mode === 'text') {
       // Real streaming API call for text mode
@@ -70,11 +137,17 @@ export default function ChatPage() {
           },
           body: JSON.stringify({ 
             message: userMessage.content,
-            chatId: crypto.randomUUID()
+            chatId: currentChatId
           })
         });
 
         if (!response.ok) {
+          if (response.status === 429) {
+            setRateLimited(true);
+            setValidationError('Too many requests. Please wait a moment.');
+            setTimeout(() => setRateLimited(false), 60000); // 1 minute cooldown
+            return;
+          }
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -138,6 +211,7 @@ export default function ChatPage() {
         }
       } catch (error) {
         console.error('Error calling chat API:', error);
+        const sanitizedError = sanitizeErrorMessage(error);
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -145,6 +219,7 @@ export default function ChatPage() {
           type: 'text'
         };
         setMessages(prev => [...prev, errorMessage]);
+        setValidationError(sanitizedError);
         setIsLoading(false);
       }
     } else {
@@ -158,16 +233,24 @@ export default function ChatPage() {
           },
           body: JSON.stringify({ 
             message: userMessage.content,
-            chatId: crypto.randomUUID()
+            chatId: currentChatId
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
         console.log('Image generation response:', data);
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            setRateLimited(true);
+            setValidationError('Too many requests. Please wait a moment.');
+            setTimeout(() => setRateLimited(false), 60000); // 1 minute cooldown
+            return;
+          }
+          // Handle API errors with user-friendly messages
+          const errorMessage = data.error || `HTTP error! status: ${response.status}`;
+          throw new Error(errorMessage);
+        }
 
         if (data.success && data.imageUrl) {
           const assistantMessage: Message = {
@@ -183,6 +266,7 @@ export default function ChatPage() {
         }
       } catch (error) {
         console.error('Error calling image generation API:', error);
+        const sanitizedError = sanitizeErrorMessage(error);
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -190,6 +274,7 @@ export default function ChatPage() {
           type: 'text'
         };
         setMessages(prev => [...prev, errorMessage]);
+        setValidationError(sanitizedError);
       }
       setIsLoading(false);
     }
@@ -219,11 +304,23 @@ export default function ChatPage() {
                 <input
                   type="text"
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    setValidationError(''); // Clear error on input change
+                  }}
                   placeholder="Message..."
-                  className="w-full px-4 py-3 text-foreground bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  maxLength={mode === 'image' ? MAX_IMAGE_PROMPT_LENGTH : MAX_MESSAGE_LENGTH}
+                  className={`w-full px-4 py-3 text-foreground bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                    validationError ? 'border-red-500' : 'border-border'
+                  }`}
                   onKeyPress={(e) => e.key === 'Enter' && handleSubmit(e)}
                 />
+                {validationError && (
+                  <p className="text-red-500 text-sm mt-1">{validationError}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {input.length}/{mode === 'image' ? MAX_IMAGE_PROMPT_LENGTH : MAX_MESSAGE_LENGTH} characters
+                </p>
               </div>
               
               {/* Toggle Buttons - Left aligned inside the same container */}
@@ -254,10 +351,10 @@ export default function ChatPage() {
             {/* Send Button */}
             <button
               onClick={handleSubmit}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || rateLimited}
               className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? 'Sending...' : 'Send'}
+              {isLoading ? 'Sending...' : rateLimited ? 'Rate Limited' : 'Send'}
             </button>
           </div>
         </div>
@@ -269,8 +366,26 @@ export default function ChatPage() {
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <h1 className="text-xl font-semibold text-card-foreground">Chat Assistant</h1>
+          <button
+            onClick={startNewChat}
+            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            New Chat
+          </button>
         </div>
       </div>
 
@@ -330,11 +445,23 @@ export default function ChatPage() {
             <input
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setValidationError(''); // Clear error on input change
+              }}
               placeholder="Message..."
-              className="w-full px-4 py-3 text-foreground bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              maxLength={mode === 'image' ? MAX_IMAGE_PROMPT_LENGTH : MAX_MESSAGE_LENGTH}
+              className={`w-full px-4 py-3 text-foreground bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                validationError ? 'border-red-500' : 'border-border'
+              }`}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit(e)}
             />
+            {validationError && (
+              <p className="text-red-500 text-sm mt-1">{validationError}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {input.length}/{mode === 'image' ? MAX_IMAGE_PROMPT_LENGTH : MAX_MESSAGE_LENGTH} characters
+            </p>
           </div>
           
           {/* Toggle Buttons - Left aligned inside the same container */}
@@ -365,10 +492,10 @@ export default function ChatPage() {
           <div className="text-center">
             <button
               onClick={handleSubmit}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || rateLimited}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? 'Sending...' : 'Send'}
+              {isLoading ? 'Sending...' : rateLimited ? 'Rate Limited' : 'Send'}
             </button>
           </div>
         </div>

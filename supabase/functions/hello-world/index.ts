@@ -4,7 +4,8 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "@supabase/supabase-js";
+// Remove this line since it's not being used:
+// import { createClient } from "@supabase/supabase-js";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

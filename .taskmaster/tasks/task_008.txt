@@ -1,0 +1,18 @@
+# Task ID: 8
+# Title: Create Supabase Edge Function for Image Generation
+# Status: pending
+# Dependencies: 1, 2, 4
+# Priority: medium
+# Description: Implement a serverless function to handle communication with OpenAI's image generation API
+# Details:
+1. Create a new Supabase Edge Function for image generation
+2. Implement the function to accept user prompts for image creation
+3. Set up the OpenAI API client with the gpt-image-1 model
+4. Configure the API request with appropriate parameters for image generation
+5. Implement error handling for API failures
+6. Add functionality to store generated images or their URLs
+7. Return the image URL in a format that can be consumed by the frontend
+8. Follow the OpenAI_ImageGeneration.md guidelines for implementation details
+
+# Test Strategy:
+Test the Edge Function locally using the Supabase CLI. Verify it correctly communicates with OpenAI's image generation API and returns appropriate image URLs. Test error scenarios and edge cases with various prompt types.

@@ -1,0 +1,17 @@
+# Task ID: 2
+# Title: Create Database Schema and Migrations
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Define and implement the database schema for chats and messages in Supabase
+# Details:
+1. Create database migrations for the Chat and Message models as defined in the PRD
+2. For the Chat model, include fields: id (UUID), created_at (timestamp), updated_at (timestamp)
+3. For the Message model, include fields: id (UUID), role (string: 'user' or 'assistant'), content (string), chat_id (UUID, foreign key to Chat), created_at (timestamp), type (string: 'text' or 'image'), image_url (string, optional)
+4. Set up appropriate indexes for efficient querying
+5. Implement foreign key constraints between Chat and Message tables
+6. Create Supabase migrations using the CLI (refer to Supabase_Migrations_Local.md)
+7. Test migrations locally before applying to production
+
+# Test Strategy:
+Run migrations locally and verify the schema is created correctly. Test CRUD operations on both tables to ensure relationships work as expected. Validate that constraints are properly enforced.

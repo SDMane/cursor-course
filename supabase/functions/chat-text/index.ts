@@ -4,6 +4,8 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "../_shared/types.ts";
+import { createSupabaseClient } from "../_shared/supabase-client.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +52,71 @@ Deno.serve(async (req) => {
       throw err;
     }
 
+    // Initialize Supabase client
+    const supabase = createSupabaseClient();
+
+    // Create or get chat session
+    if (!chatId) {
+      // Create new chat session
+      const { data: newSession, error: sessionError } = await supabase
+        .from("chat_sessions")
+        .insert({ title: message.substring(0, 50) })
+        .select()
+        .single();
+
+      if (sessionError) {
+        console.error("Error creating chat session:", sessionError);
+        // If session creation fails, generate a new UUID and continue
+        chatId = crypto.randomUUID();
+      } else if (newSession) {
+        chatId = newSession.id;
+      }
+    } else {
+      // Check if chat session exists, if not create it
+      const { data: existingSession, error: checkError } = await supabase
+        .from("chat_sessions")
+        .select("id")
+        .eq("id", chatId)
+        .single();
+
+      if (checkError || !existingSession) {
+        console.log("Chat session not found, creating new one:", chatId);
+        const { data: newSession, error: sessionError } = await supabase
+          .from("chat_sessions")
+          .insert({ id: chatId, title: message.substring(0, 50) })
+          .select()
+          .single();
+
+        if (sessionError) {
+          console.error("Error creating chat session:", sessionError);
+        }
+      } else {
+        // Update existing chat session timestamp
+        const { error: updateError } = await supabase
+          .from("chat_sessions")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", chatId);
+
+        if (updateError) {
+          console.error("Error updating chat session:", updateError);
+        }
+      }
+    }
+
+    // Save user message to database
+    const { error: userMessageError } = await supabase
+      .from("messages")
+      .insert({
+        chat_id: chatId,
+        role: "user",
+        content: message,
+        type: "text",
+      });
+
+    if (userMessageError) {
+      console.error("Error saving user message:", userMessageError);
+    }
+
     // Check if OpenAI API key is available
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     
@@ -87,11 +154,16 @@ Deno.serve(async (req) => {
     try {
       console.log("Testing OpenAI API key...");
       
+      // Add timeout and better error handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${openaiApiKey}`,
           "Content-Type": "application/json",
+          "User-Agent": "Supabase-Edge-Function/1.0"
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
@@ -103,7 +175,10 @@ Deno.serve(async (req) => {
           ],
           stream: true,
         }),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       if (!openaiResponse.ok) {
         const errorText = await openaiResponse.text();
@@ -113,6 +188,7 @@ Deno.serve(async (req) => {
       console.log("OpenAI API key is working! Streaming response...");
 
       // Create readable stream for response - IMMEDIATE FORWARDING
+      let accumulatedResponse = "";
       const readable = new ReadableStream({
         async start(controller) {
           try {
@@ -133,6 +209,22 @@ Deno.serve(async (req) => {
                     const data = line.slice(6).trim();
                     
                     if (data === '[DONE]') {
+                      // Save complete assistant response to database
+                      if (accumulatedResponse) {
+                        const { error: assistantMessageError } = await supabase
+                          .from("messages")
+                          .insert({
+                            chat_id: chatId,
+                            role: "assistant",
+                            content: accumulatedResponse,
+                            type: "text",
+                          });
+
+                        if (assistantMessageError) {
+                          console.error("Error saving assistant message:", assistantMessageError);
+                        }
+                      }
+                      
                       controller.enqueue(new TextEncoder().encode(`data: [DONE]\n\n`));
                       controller.close();
                       return;
@@ -144,6 +236,8 @@ Deno.serve(async (req) => {
                         const content = parsed.choices?.[0]?.delta?.content;
                         
                         if (content) {
+                          // Accumulate response content
+                          accumulatedResponse += content;
                           // IMMEDIATELY forward each token as it arrives
                           console.log(`Forwarding token: "${content}"`);
                           controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content })}\n\n`));
@@ -176,8 +270,26 @@ Deno.serve(async (req) => {
     } catch (openaiError) {
       console.error("OpenAI API Error:", openaiError);
       
+      // Detect specific error types and provide better user feedback
+      let errorMessage = openaiError.message;
+      let userFriendlyMessage = "";
+      
+      if (errorMessage.includes("dns error") || errorMessage.includes("failed to lookup address")) {
+        userFriendlyMessage = `Network connectivity issue detected. This might be a temporary DNS problem or network configuration issue. Please try again in a moment.`;
+        console.log("DNS/Network error detected:", errorMessage);
+      } else if (errorMessage.includes("timeout") || errorMessage.includes("AbortError")) {
+        userFriendlyMessage = `Request timed out. The OpenAI API is taking longer than expected to respond. Please try again.`;
+        console.log("Timeout error detected:", errorMessage);
+      } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+        userFriendlyMessage = `API key authentication failed. Please check your OpenAI API key configuration.`;
+        console.log("Authentication error detected:", errorMessage);
+      } else {
+        userFriendlyMessage = `OpenAI API temporarily unavailable. Please try again later.`;
+        console.log("General API error:", errorMessage);
+      }
+      
       // Fallback to mock response if OpenAI fails
-      const fallbackResponse = `OpenAI API Error: ${openaiError.message}. Using fallback response for: "${message}".`;
+      const fallbackResponse = `${userFriendlyMessage} For now, here's a helpful response about your question: "${message}".`;
       
       const readable = new ReadableStream({
         async start(controller) {
